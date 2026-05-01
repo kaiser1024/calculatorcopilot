@@ -1,0 +1,123 @@
+Calculator Text Database – Rules & Contracts
+===========================================
+
+Purpose
+-------
+This database stores all user-facing text used by calculator plugins.
+Each database corresponds to exactly ONE language and ONE website (URL).
+
+Country variation is handled INSIDE the database.
+Language variation is handled by USING A DIFFERENT DATABASE.
+
+
+Core Concepts
+-------------
+
+1. Text is identified by a semantic text_key.
+   - text_key is stable and never translated.
+   - Examples:
+     - calculate_button
+     - citizenship_question_label
+     - citizenship_option_yes
+
+2. text_value contains the user-facing text in the language of this DB.
+
+3. country defines the scope of the text.
+   - country = NULL  → global text (applies to all countries)
+   - country = 'DE'  → country-specific override
+   - country = 'FR'  → country-specific override
+
+
+Lookup Rule (MANDATORY)
+----------------------
+
+When resolving text for a given key and country:
+
+1. First, look for a country-specific entry:
+   SELECT text_value
+   WHERE text_key = :key
+     AND country = :country
+
+2. If no row is found, fall back to the global entry:
+   SELECT text_value
+   WHERE text_key = :key
+     AND country IS NULL
+
+3. If still not found:
+   - Return the text_key itself (development fallback)
+   - Missing text is considered a configuration error
+
+
+Interpretation Rules
+--------------------
+
+- Global text (country = NULL):
+  - Must be used when a text is identical for all countries.
+  - Example:
+      calculate_button → "Calculate"
+
+- Country-specific text:
+  - Used when wording depends on the country.
+  - Example:
+      "Are you a German citizen?"
+      "Are you a French citizen?"
+
+- The same text_key may exist:
+  - Once as global
+  - Multiple times as country-specific overrides
+
+- Country-specific text ALWAYS overrides global text.
+
+
+What MUST NOT Be Done
+--------------------
+
+- Do NOT encode country into the text_key.
+  ❌ calculate_button_de
+  ✅ calculate_button + country='DE'
+
+- Do NOT duplicate global text for each country.
+
+- Do NOT store language logic in PHP or JS.
+  Language is determined by the database used.
+
+- Do NOT let JavaScript resolve or choose text.
+  All text resolution happens in PHP.
+
+
+Behavioral Guarantees
+---------------------
+
+- The calculator core plugin is the ONLY component that reads this table.
+- Country plugins NEVER query the database directly.
+- calc_core_get_text(key, country) MUST follow these rules exactly.
+- Changing the DB content must never require PHP changes.
+
+
+Examples
+--------
+
+Global text:
+- text_key: calculate_button
+- country: NULL
+- text_value: Calculate
+
+Country-specific text:
+- text_key: citizenship_question_label
+- country: DE
+- text_value: Are you a German citizen?
+
+- text_key: citizenship_question_label
+- country: FR
+- text_value: Are you a French citizen?
+
+
+Final Notes
+-----------
+
+If a text ever needs to vary by country in the future,
+add a country-specific row.
+
+If it does not vary, keep it global.
+
+This contract is stable and must not be violated.
