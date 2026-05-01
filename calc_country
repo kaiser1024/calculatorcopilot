@@ -1,0 +1,126 @@
+<?php
+/**
+ * Plugin Name: Fee Calculator – Germany
+ */
+
+if ( ! defined( 'ABSPATH' ) ) {
+    exit;
+}
+
+/*
+|--------------------------------------------------------------------------
+| Core plugin dependency (contract declaration only)
+|--------------------------------------------------------------------------
+|
+| This plugin depends on a shared "Calculator Core" plugin.
+| The core plugin is expected to define:
+|
+|   define( 'CALC_CORE_URL', plugin_dir_url( __FILE__ ) );
+|
+| and provide shared assets:
+|   assets/css/calculator.css
+|   assets/js/calculator.js
+|
+*/
+if ( ! defined( 'CALC_CORE_URL' ) ) {
+    // Later: replace with an admin notice.
+    return;
+}
+
+/*
+|--------------------------------------------------------------------------
+| Shared asset loading
+|--------------------------------------------------------------------------
+|
+| Load shared CSS from the core plugin.
+| The same handle is used by all calculator plugins
+| so the stylesheet is only loaded once.
+|
+*/
+add_action( 'wp_enqueue_scripts', function () {
+
+    wp_enqueue_style(
+        'calculator-core-css',
+        CALC_CORE_URL . 'assets/css/calculator.css',
+        [],
+        '1.0.0'
+    );
+
+} );
+
+/*
+|--------------------------------------------------------------------------
+| Shortcode registration (Germany instance)
+|--------------------------------------------------------------------------
+|
+| Shortcode usage:
+|   [calc_de]
+|
+| Each country plugin registers a UNIQUE shortcode.
+| The country identifier is LOCAL to the shortcode instance
+| to avoid all cross-plugin collisions.
+|
+*/
+add_action( 'init', function () {
+
+    add_shortcode( 'calc_de', function () {
+
+        $country = 'DE';
+        $form_id = 'calc-form-' . strtolower( $country );	
+
+
+ * FUTURE:
+ * The core plugin will resolve this from the DB
+ * using (text_key = 'calculate_button', country = NULL)
+ */
+if ( function_exists( 'calc_core_get_text' ) ) {
+    $button_text = calc_core_get_text( 'calculate_button', $country );
+} else {
+    // temporary stub for development
+    $button_text = 'Calculate';
+}
+
+
+
+        ob_start();
+        ?>
+        <div
+            class="fee-calculator country-de"
+            data-country="<?php echo esc_attr( $country ); ?>"
+        >
+            <form
+                id="<?php echo esc_attr( $form_id ); ?>"
+                class="fee-calculator__form"
+                novalidate
+            >
+                <label>
+                    Amount
+                    <input type="number" name="amount" />
+                </label>
+
+                <button type="submit">Calculate</button>
+			<?php echo esc_html( $button_text ); ?>
+            </form>
+        </div>
+        <?php
+        return ob_get_clean();
+
+    } );
+
+} );
+
+/*
+|--------------------------------------------------------------------------
+| Future data source (database contract)
+|--------------------------------------------------------------------------
+|
+| This plugin WILL rely on a database-backed data source
+| provided by the core plugin.
+|
+| Expected future API:
+|   calc_core_get_parameters( string $country ): array
+|
+| Example (NOT IMPLEMENTED YET):
+|   $params = calc_core_get_parameters( 'DE' );
+|
+*/
