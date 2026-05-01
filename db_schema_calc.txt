@@ -1,0 +1,19 @@
+CREATE TABLE calculator_texts (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    text_key VARCHAR(100) NOT NULL,
+    country CHAR(2) NULL,
+    text_value TEXT NOT NULL,
+
+    PRIMARY KEY (id),
+
+    -- Prevent duplicate definitions
+    UNIQUE KEY uniq_text_key_country (text_key, country),
+
+    -- Helpful index for lookups
+    KEY idx_text_key (text_key),
+    KEY idx_country (country)
+);
+
+Text lookup rule:
+1. Try SELECT. If no result, try SELECT text_value WHERE text_key = :key AND country IS NULL1. Try SELECT text_value WHERE text_key = :key AND country = :country
+3. If still no result, return the text_key as fallback (development)
