@@ -1,0 +1,3 @@
+INSERT INTO calculator_texts (text_key, country, text_value)
+VALUES ('calculate_button', NULL, 'Calculate');
+
